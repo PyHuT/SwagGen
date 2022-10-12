@@ -152,8 +152,27 @@ extension {{ options.name }}{% if tag %}.{{ options.tagPrefix }}{{ tag|upperCame
             {% endfor %}
             public typealias SuccessType = {{ successType|default:"Void"}}
             {% for response in responses %}
+            
+            
+            {% if response.contentTypes %}
+            public enum ResponseContent: Codable {
+                
+                public init(contentType: String, data: Data, decoder: ResponseDecoder) throws {
+                    switch contentType {
+                        {% for contentType in response.contentTypes %}
+                    case "{{ contentType.key }}": self = try .{{ contentType.name }}(decoder.decode({{ contentType.type }}.self, from: data))
+                        {% endfor %}
+                    default: throw APIClientError.unexpectedStatusCode(statusCode: 22, data: data)
+                    }
+                }
+                
+                {% for contentType in response.contentTypes %}
+                case {{ contentType.name }}({{ contentType.type }})
+                {% endfor %}
+               
+            }
+            {% endif %}
             {% if response.description %}
-
             /** {{ response.description }} */
             {% endif %}
             {% if response.statusCode %}

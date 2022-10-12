@@ -10,6 +10,7 @@ public struct Content {
         case xml = "application/xml"
         case multipartForm = "multipart/form-data"
         case text = "text/plain"
+        case pdf = "application/pdf"
     }
 
     public func getMediaItem(_ type: MediaType) -> MediaItem? {
@@ -30,6 +31,10 @@ public struct Content {
 
     public var xmlSchema: Schema? {
         return getMediaItem(.xml)?.schema
+    }
+    
+    public var pdfSchema: Schema? {
+        return getMediaItem(.pdf)?.schema
     }
 }
 

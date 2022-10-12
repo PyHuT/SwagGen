@@ -369,9 +369,31 @@ public class CodeFormatter {
         context["name"] = response.name.lowerCamelCased()
         context["statusCode"] = response.statusCode
         context["success"] = response.successful
-        context["schema"] = response.response.value.schema.flatMap(getSchemaContext)
         context["description"] = response.response.value.description.description
-        context["type"] = response.response.value.schema.flatMap { getSchemaType(name: response.name, schema: $0) }
+        let items = response.response.value.content?.mediaItems
+            .map {
+                var newCxt = [String: Any]()
+                let obj = getSchemaType(name: "", schema: $1.schema)
+                newCxt["key"] = $0
+                newCxt["type"] = obj
+                var tt = String($0)
+                tt = String(tt.split(separator: "/").last ?? "")
+                
+                newCxt["name"] = tt.lowerCamelCased()
+                return newCxt
+            }
+        
+        context["contentTypes"] = items
+        
+        context["schema"] = response.response.value.schema.flatMap(getSchemaContext)
+        if response.response.value.content?.mediaItems.isEmpty ?? true {
+            context["type"] = response.response.value.schema.flatMap { getSchemaType(name: response.name, schema: $0) }
+        } else {
+            context["type"] = "ResponseContent"
+        }
+        
+//        }
+       
 
         return context
     }
