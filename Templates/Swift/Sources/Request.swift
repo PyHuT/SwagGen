@@ -1,6 +1,7 @@
 {% include "Includes/Header.stencil" %}
 
 import Foundation
+import Alamofire
 
 extension {{ options.name }}{% if tag %}.{{ options.tagPrefix }}{{ tag|upperCamelCase }}{{ options.tagSuffix }}{% endif %} {
 
@@ -155,12 +156,16 @@ extension {{ options.name }}{% if tag %}.{{ options.tagPrefix }}{{ tag|upperCame
             
             
             {% if response.contentTypes %}
-            public enum ResponseContent: Codable {
+            public enum {{response.type}}: Codable {
                 
                 public init(contentType: String, data: Data, decoder: ResponseDecoder) throws {
                     switch contentType {
                         {% for contentType in response.contentTypes %}
-                    case "{{ contentType.key }}": self = try .{{ contentType.name }}(decoder.decode({{ contentType.type }}.self, from: data))
+                        {% if contentType.type == "File" %}
+                        case "{{ contentType.key }}": self = try .{{ contentType.name }}(data)
+                        {% else %}
+                        case "{{ contentType.key }}": self = try .{{ contentType.name }}(decoder.decode({{ contentType.type }}.self, from: data))
+                        {% endif %}
                         {% endfor %}
                     default: throw APIClientError.unexpectedStatusCode(statusCode: 22, data: data)
                     }
@@ -250,16 +255,21 @@ extension {{ options.name }}{% if tag %}.{{ options.tagPrefix }}{{ tag|upperCame
                 }
             }
 
-            public init(statusCode: Int, data: Data, decoder: ResponseDecoder) throws {
+            public init(statusCode: Int, data: Data, decoder: ResponseDecoder, headers: HTTPHeaders?) throws {
                 {% if hasResponseModels %}
                 {% endif %}
+                let contentType = headers?["Content-Type"] ?? "application/json"
                 switch statusCode {
                 {% for response in responses where response.statusCode %}
                 {% if response.type %}
                 {% if response.type == "File" %}
                 case {{ response.statusCode }}: self = try .{{ response.name }}(data)
                 {% else %}
+                    {% if  "ResponseContent" in response.type %}
+                case {{ response.statusCode }}: self = try .{{ response.name }}({{ response.type }}(contentType: contentType, data: data, decoder: decoder))
+                    {% else %}
                 case {{ response.statusCode }}: self = try .{{ response.name }}(decoder.decode{% if response.isAnyType %}Any{% endif %}({{ response.type }}.self, from: data))
+                    {% endif %}
                 {% endif %}
                 {% else %}
                 case {{ response.statusCode }}: self = .{{ response.name }}

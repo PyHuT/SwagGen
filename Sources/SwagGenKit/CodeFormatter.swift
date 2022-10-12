@@ -383,17 +383,14 @@ public class CodeFormatter {
                 return newCxt
             }
         
-        context["contentTypes"] = items
-        
-        context["schema"] = response.response.value.schema.flatMap(getSchemaContext)
-        if response.response.value.content?.mediaItems.isEmpty ?? true {
-            context["type"] = response.response.value.schema.flatMap { getSchemaType(name: response.name, schema: $0) }
+        if items?.count ?? 0 > 1  {
+            context["type"] = "ResponseContent\(response.statusCode ?? 200)"
+            context["contentTypes"] = items
         } else {
-            context["type"] = "ResponseContent"
+            context["type"] = response.response.value.schema.flatMap { getSchemaType(name: response.name, schema: $0) }
         }
         
-//        }
-       
+        context["schema"] = response.response.value.schema.flatMap(getSchemaContext)
 
         return context
     }
