@@ -68,6 +68,19 @@ extension Schema {
         }
         return nil
     }
+    
+    var parents: [ComponentObject<Schema>] {
+        var parents = [ComponentObject<Schema>]()
+        if case let .group(group) = type, group.type == .all {
+            for schema in group.schemas {
+                if case let .reference(reference) = schema.type {
+                    parents.append(reference.component)
+                }
+            }
+        }
+        
+        return parents
+    }
 
     var properties: [Property] {
         return requiredProperties + optionalProperties
@@ -106,11 +119,19 @@ extension Schema {
     }
 
     var inheritedRequiredProperties: [Property] {
-        return (parent?.value.inheritedRequiredProperties ?? []) + requiredProperties
+
+        let inherited = parents.flatMap { element in
+            element.value.inheritedRequiredProperties
+        }
+        return inherited + requiredProperties
     }
 
     var inheritedOptionalProperties: [Property] {
-        return (parent?.value.inheritedOptionalProperties ?? []) + optionalProperties
+        
+        let inherited = parents.flatMap { p in
+            p.value.inheritedOptionalProperties
+        }
+        return inherited + optionalProperties
     }
 
     func getEnum(name: String, description: String?) -> Enum? {
