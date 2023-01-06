@@ -160,7 +160,11 @@ extension Schema {
     }
 
     var inheritedEnums: [Enum] {
-        return (parent?.value.inheritedEnums ?? []) + enums
+        let inherited = parents.flatMap { element in
+            element.value.inheritedEnums
+        }
+        
+        return inherited + enums
     }
 
     var inlineSchema: Schema? {
